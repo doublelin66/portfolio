@@ -49,7 +49,40 @@
         h1 span, h2 span, h3 span, h4 span { font-family: 'Noto Sans TC', sans-serif; }
         a { text-decoration: none; color: inherit; transition: 0.3s; }
 
-        /* --- 3. 滾動出現特效 --- */
+        /* --- 3. 圖片放大彈窗樣式 (Lightbox) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95); /* 深色背景 */
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: zoom-out; /* 點擊關閉 */
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+
+        .modal-content img {
+            display: block;
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+
+        /* --- 4. 滾動出現特效 --- */
         .reveal {
             opacity: 0;
             transform: translateY(30px);
@@ -60,7 +93,7 @@
             transform: translateY(0);
         }
 
-        /* --- 4. 導覽列 --- */
+        /* --- 5. 導覽列 --- */
         nav {
             padding: 1.5rem 5%;
             display: flex;
@@ -88,7 +121,7 @@
             box-shadow: 0 0 15px rgba(37, 99, 235, 0.2);
         }
 
-        /* --- 5. Hero Section --- */
+        /* --- 6. Hero Section --- */
         .hero {
             min-height: 85vh;
             display: flex;
@@ -169,7 +202,7 @@
             100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
         }
 
-        /* --- 6. 證書區 --- */
+        /* --- 7. 證書區 --- */
         section { padding: 5rem 5%; max-width: 1200px; margin: 0 auto; }
         .section-header { text-align: center; margin-bottom: 3rem; }
         
@@ -197,12 +230,22 @@
             padding: 1.5rem; display: flex; align-items: center; gap: 1rem;
             border-bottom: 1px solid #f1f5f9; background: rgba(255,255,255,0.9);
         }
-        .anchor-header img { width: 48px; height: 48px; object-fit: contain; }
+        
+        .anchor-header img { 
+            width: 48px; height: 48px; object-fit: contain; 
+            transition: transform 0.2s;
+        }
+        .anchor-header img:hover { transform: scale(1.1); }
         
         .anchor-img-full {
             width: 100%; background: #f8fafc; padding: 1rem; text-align: center;
         }
-        .anchor-img-full img { width: 100%; height: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        .anchor-img-full img { 
+            width: 100%; height: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            transition: transform 0.2s;
+        }
+        .anchor-img-full img:hover { transform: scale(1.02); }
 
         .anchor-body { padding: 1.5rem; }
         .skill-list li { margin-bottom: 0.8rem; display: flex; align-items: start; font-size: 0.95rem; color: var(--text-sub); }
@@ -246,9 +289,14 @@
             border: 1px solid #f1f5f9;
             padding: 5px;
         }
-        .cert-img-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        .cert-img-box img { 
+            max-width: 100%; max-height: 100%; object-fit: contain; 
+            transition: transform 0.2s;
+        }
+        .cert-img-box img:hover { transform: scale(1.1); }
 
-        /* --- 7. 工具區 --- */
+        /* --- 8. 工具區 --- */
         .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
         .tool-card {
             background: var(--card-bg); border-radius: var(--border-radius); overflow: hidden;
@@ -304,6 +352,12 @@
 
     <div class="cursor-glow" id="glow"></div>
 
+    <div class="modal-overlay" id="imageModal" onclick="closeImage()">
+        <div class="modal-content">
+            <img id="modalImg" src="" alt="Certificate Full View">
+        </div>
+    </div>
+
     <nav>
         <div class="brand">AI-DRIVEN <span>PM</span></div>
         <a href="mailto:your.email@example.com" class="btn-contact">聯繫我 Contact</a>
@@ -341,7 +395,7 @@
     <section id="about">
         <div class="section-header reveal">
             <h3>Professional Standards</h3>
-            <p>核心專業認證與持續進修軌跡</p>
+            <p>核心專業認證與持續進修軌跡 <span style="font-size:0.8rem; color:#94a3b8;">(點擊證書可放大)</span></p>
         </div>
 
         <div class="cert-container">
@@ -378,37 +432,49 @@
             <div class="cert-grid">
                 <div class="cert-item reveal">
                     <span class="badge-tag">AI Agents Trend</span>
-                    <div class="cert-img-box"><img src="cert-agents.png" alt="AI Agents"></div>
+                    <div class="cert-img-box">
+                        <img src="cert-agents.png" alt="AI Agents">
+                    </div>
                     <h4>5-Day AI Agents Intensive</h4>
                     <p style="font-size: 0.9rem; color: #64748b;">掌握 AI 代理人協作邏輯，具備規劃多代理系統的前瞻視野。</p>
                 </div>
                 <div class="cert-item reveal">
                     <span class="badge-tag">Google Certified</span>
-                    <div class="cert-img-box"><img src="cert-gemini.png" alt="Gemini Educator"></div>
+                    <div class="cert-img-box">
+                        <img src="cert-gemini.png" alt="Gemini Educator">
+                    </div>
                     <h4>Gemini Certified Educator</h4>
                     <p style="font-size: 0.9rem; color: #64748b;">熟練運用 Gemini 模型於知識管理與教學引導，提升組織內部的 AI 素養。</p>
                 </div>
                 <div class="cert-item reveal">
                     <span class="badge-tag">Core Skill</span>
-                    <div class="cert-img-box"><img src="cert-prompt-spec.png" alt="Prompt Spec"></div>
+                    <div class="cert-img-box">
+                        <img src="cert-prompt-spec.png" alt="Prompt Spec">
+                    </div>
                     <h4>Prompt Engineering Specialization</h4>
                     <p style="font-size: 0.9rem; color: #64748b;">整合 ChatGPT 提示工程與數據分析，兼顧安全倫理，具備完整 LLM 應用實戰力。</p>
                 </div>
                 <div class="cert-item reveal">
                     <span class="badge-tag">Technical Base</span>
-                    <div class="cert-img-box"><img src="cert-genai-foundations.png" alt="GenAI Foundations"></div>
+                    <div class="cert-img-box">
+                        <img src="cert-genai-foundations.png" alt="GenAI Foundations">
+                    </div>
                     <h4>GenAI Developer Foundations</h4>
                     <p style="font-size: 0.9rem; color: #64748b;">具備 GenAI 開發基礎，理解 LLM 原理與 Transformer 架構，能與工程團隊順暢溝通。</p>
                 </div>
                 <div class="cert-item reveal">
                     <span class="badge-tag">User Centric</span>
-                    <div class="cert-img-box"><img src="cert-ux.png" alt="UX Design"></div>
+                    <div class="cert-img-box">
+                        <img src="cert-ux.png" alt="UX Design">
+                    </div>
                     <h4>UX 三刀流使用者體驗設計</h4>
                     <p style="font-size: 0.9rem; color: #64748b;">平衡技術與體驗。具備使用者研究與資訊架構 (IA) 規劃能力，確保 AI 解決真實痛點。</p>
                 </div>
                 <div class="cert-item reveal">
                     <span class="badge-tag">Enterprise AI</span>
-                    <div class="cert-img-box"><img src="cert-vertex-prompt.png" alt="Vertex AI"></div>
+                    <div class="cert-img-box">
+                        <img src="cert-vertex-prompt.png" alt="Vertex AI">
+                    </div>
                     <h4>Prompt Design in Vertex AI</h4>
                     <p style="font-size: 0.9rem; color: #64748b;">掌握企業級 Prompt Engineering。運用 Google Vertex AI 調教模型參數，優化生成精準度。</p>
                 </div>
@@ -434,7 +500,7 @@
                         <p style="color: #64748b;">
                             運用生成式 AI 影像重繪技術，使用者上傳單張照片即可一鍵替換服裝與妝容。解決「衣櫃永遠少一件衣服」的困擾，實現高擬真的虛擬試穿體驗。
                         </p>
-                        <a href="https://drive.google.com/file/d/1I8xXJVEuEd7YdVLxT-FHaxAxc_M1vlM3/preview?usp=drive_link" target="_blank" class="tool-link">查看試穿影片 <i class="fas fa-play-circle"></i></a>
+                        <a href="https://drive.google.com/file/d/1oyEVpxno_7onw4BVECxAwl83L99sE-ew/preview" target="_blank" class="tool-link">查看試穿影片 <i class="fas fa-play-circle"></i></a>
                     </div>
                 </div>
 
@@ -447,7 +513,7 @@
                         <p style="color: #64748b;">
                             串接多方新聞 API 與爬蟲技術，即時運算全網熱門話題。透過 NLP 自然語言處理提煉關鍵字雲與排行榜，協助團隊快速捕捉市場風向與競品動態。
                         </p>
-                        <a href="https://drive.google.com/file/d/15AS_gTzx3KKe3As9hT3a5bYtLIMfR0Ly/preview?usp=drive_link" target="_blank" class="tool-link">查看 Demo 影片 <i class="fas fa-play-circle"></i></a>
+                        <a href="https://drive.google.com/file/d/15AS_gTzx3KKe3As9hT3a5bYtLIMfR0Ly/preview" target="_blank" class="tool-link">查看 Demo 影片 <i class="fas fa-play-circle"></i></a>
                     </div>
                 </div>
 
@@ -460,7 +526,7 @@
                         <p style="color: #64748b;">
                             整合 LLM 文本生成與 Diffusion 圖像模型。用戶僅需輸入單一主題，系統即自動產出完整故事腳本、風格化分鏡圖，並延伸製作成動態影片。打造從創意到影音的一站式 AIGC 生產流。
                         </p>
-                        <a href="https://drive.google.com/file/d/1sttLVLgkDw6JIKDvTUY3mEtSDBbLNXBs/preview?usp=drive_link" target="_blank" class="tool-link">觀看生成影片 <i class="fas fa-play-circle"></i></a>
+                        <a href="https://drive.google.com/file/d/1YaByBaraZvvcEYofEVEbQi2OOYwP2c0W/preview" target="_blank" class="tool-link">觀看生成影片 <i class="fas fa-play-circle"></i></a>
                     </div>
                 </div>
 
@@ -527,6 +593,35 @@
             setTimeout(type, typeSpeed);
         }
         document.addEventListener('DOMContentLoaded', type);
+
+        // --- 4. [修復版] 圖片放大 (Lightbox) 自動綁定控制 ---
+        const imageModal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImg');
+
+        function openImage(src) {
+            modalImg.src = src;
+            imageModal.style.display = 'flex'; 
+            setTimeout(() => { imageModal.classList.add('active'); }, 10);
+        }
+
+        function closeImage() {
+            imageModal.classList.remove('active'); 
+            setTimeout(() => { imageModal.style.display = 'none'; }, 300);
+        }
+
+        // 自動搜尋頁面上所有「證書相關」的圖片，強制綁定點擊事件
+        // 選取器包含：.anchor-header img (Badge), .anchor-img-full img (PMP), .cert-img-box img (6張證書)
+        const certImages = document.querySelectorAll('.anchor-header img, .anchor-img-full img, .cert-img-box img');
+        
+        certImages.forEach(img => {
+            // 1. 強制設定滑鼠樣式為「放大鏡」
+            img.style.cursor = 'zoom-in'; 
+            
+            // 2. 綁定點擊事件
+            img.addEventListener('click', function() {
+                openImage(this.src); // 傳入當前點擊圖片的網址
+            });
+        });
     </script>
 </body>
 </html>
