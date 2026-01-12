@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 驅動的產品實踐者 | Product Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- 1. 全域變數 --- */
+        :root {
+            --bg-color: #f8fafc;        
+            --text-main: #0f172a;       
+            --text-sub: #475569;        
+            --accent-blue: #2563eb;     
+            --accent-orange: #f59e0b;
+            --card-bg: rgba(255, 255, 255, 0.85); 
+            --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.05);
+            --border-radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            cursor: default;
+        }
+
+        /* --- 2. 互動背景：游標跟隨光暈 --- */
+        .cursor-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(245, 158, 11, 0.04) 40%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease-out;
+            mix-blend-mode: multiply; 
+        }
+
+        h1, h2, h3, h4 { font-family: 'Cinzel', serif; font-weight: 700; }
+        h1 span, h2 span, h3 span, h4 span { font-family: 'Noto Sans TC', sans-serif; }
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+
+        /* --- 3. 彈窗 Modal 樣式 --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+
+        .modal-content img, .modal-content video {
+            display: block;
+            max-width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #fff;
+            font-size: 2.5rem;
+            cursor: pointer;
+            z-index: 10000;
+            transition: 0.3s;
+            background: rgba(0,0,0,0.5);
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 50px;
+        }
+        .modal-close:hover { background: var(--accent-orange); transform: rotate(90deg); }
+
+        /* --- 4. 滾動出現特效 --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- 5. 導覽列 --- */
+        nav {
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 100;
+        }
+        .brand { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; }
+        .brand span { color: var(--accent-blue); }
+        .btn-contact {
+            padding: 0.6rem 1.8rem;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(5px);
+            border: 1px solid #e2e8f0;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            transition: 0.3s;
+        }
+        .btn-contact:hover { 
+            border-color: var(--accent-blue); color: var(--accent-blue); 
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.2);
+        }
+
+        /* --- 6. Hero Section --- */
+        .hero {
+            min-height: 85vh;
+            display: flex;
+            align-items: center;
+            padding: 2rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .hero-container {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        .hero-text h1 { font-size: 3.2rem; line-height: 1.2; margin-bottom: 1.5rem; color: #1e293b; }
+        
+        .typewriter-container {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 2rem;
+            font-family: 'Noto Sans TC', sans-serif;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+        }
+        .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.6rem;
+            background-color: var(--text-main);
+            margin-left: 5px;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .tags { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 2.5rem; }
+        .tag { 
+            background: #eff6ff; color: var(--accent-blue); padding: 0.4rem 1rem; border-radius: 8px; 
+            font-size: 0.9rem; font-weight: 600; 
+            transition: 0.3s; border: 1px solid transparent;
+        }
+        .tag:hover { border-color: var(--accent-blue); background: #fff; }
+        
+        .btn-primary {
+            display: inline-block;
+            background: var(--accent-blue);
+            color: #fff;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: 0.3s;
+        }
+        .btn-primary:hover { transform: translateY(-2px); background: #1d4ed8; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
+
+        .hero-img-box {
+            position: relative;
+            width: 380px;
+            height: 380px;
+            margin: 0 auto;
+        }
+        .hero-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            animation: morph 8s ease-in-out infinite;
+            box-shadow: 20px 20px 60px rgba(37, 99, 235, 0.1);
+            border: 4px solid #fff;
+            background: #fff;
+        }
+        @keyframes morph {
+            0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+            100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+        }
+
+        /* --- 7. 證書區 --- */
+        section { padding: 5rem 5%; max-width: 1200px; margin: 0 auto; }
+        .section-header { text-align: center; margin-bottom: 3rem; }
+        
+        .cert-container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2.5rem;
+            align-items: start;
+        }
+
+        .anchor-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.6);
+            position: sticky;
+            top: 20px;
+            transition: transform 0.3s;
+        }
+        .anchor-card:hover { transform: translateY(-5px); border-color: var(--accent-blue); }
+
+        .anchor-header {
+            padding: 1.5rem; display: flex; align-items: center; gap: 1rem;
+            border-bottom: 1px solid #f1f5f9; background: rgba(255,255,255,0.9);
+        }
+        .anchor-header img { width: 48px; height: 48px; object-fit: contain; }
+        
+        .anchor-img-full {
+            width: 100%; background: #f8fafc; padding: 1rem; text-align: center;
+        }
+        .anchor-img-full img { width: 100%; height: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        .anchor-body { padding: 1.5rem; }
+        .skill-list li { margin-bottom: 0.8rem; display: flex; align-items: start; font-size: 0.95rem; color: var(--text-sub); }
+        .skill-list i { color: var(--accent-blue); margin-right: 10px; margin-top: 5px; }
+
+        .cert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .cert-item {
+            background: var(--card-bg);
+            backdrop-filter: blur(5px);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(255,255,255,0.6);
+            transition: 0.4s;
+            display: flex; flex-direction: column;
+        }
+        .cert-item:hover { 
+            transform: translateY(-8px); 
+            border-color: var(--accent-blue); 
+            box-shadow: 0 15px 30px rgba(37, 99, 235, 0.1);
+        }
+        
+        .badge-tag {
+            font-size: 0.75rem; color: var(--accent-blue); background: #eff6ff; 
+            padding: 4px 10px; border-radius: 4px; font-weight: 700; display: inline-block; margin-bottom: 1rem; align-self: flex-start;
+        }
+        
+        .cert-img-box {
+            height: 100px;
+            background: #fff; 
+            border-radius: 8px; 
+            margin-bottom: 1rem;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden;
+            border: 1px solid #f1f5f9;
+            padding: 5px;
+        }
+        .cert-img-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        /* --- 8. 工具區 --- */
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .tool-card {
+            background: var(--card-bg); border-radius: var(--border-radius); overflow: hidden;
+            box-shadow: var(--shadow-soft); transition: 0.3s;
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        .tool-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); border-color: var(--accent-blue); }
+        
+        .tool-media { 
+            height: 250px; 
+            background: #f8fafc; 
+            overflow: hidden; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .tool-media img, .tool-media video { 
+            max-width: 100%; 
+            max-height: 100%; 
+            width: auto; 
+            height: auto;
+            object-fit: contain;
+            transition: 0.5s;
+        }
+        .tool-card:hover .tool-media img { transform: scale(1.03); }
+
+        .tool-content { padding: 1.5rem; }
+        .tool-link { 
+            color: var(--accent-blue); 
+            font-weight: 600; 
+            display: inline-flex; 
+            align-items: center; 
+            margin-top: 1rem; 
+            cursor: pointer;
+        }
+        .tool-link i { margin-left: 5px; transition: 0.3s; }
+        .tool-link:hover i { transform: translateX(5px); }
+
+        /* RWD */
+        @media (max-width: 900px) {
+            .hero-container { grid-template-columns: 1fr; text-align: center; }
+            .hero-img-box { margin-top: 2rem; width: 300px; height: 300px; }
+            .hero-text h1 { font-size: 2.5rem; }
+            .typewriter-container { justify-content: center; font-size: 1.3rem; }
+            .tags { justify-content: center; }
+            .cert-container { grid-template-columns: 1fr; } 
+            .anchor-card { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cursor-glow" id="glow"></div>
+
+    <div class="modal-overlay" id="mediaModal">
+        <div class="modal-close" onclick="closeModal()">&times;</div>
+        <div class="modal-content" id="modalContent">
+            </div>
+    </div>
+
+    <nav>
+        <div class="brand">AI-DRIVEN <span>PM</span></div>
+        <a href="mailto:your.email@example.com" class="btn-contact">聯繫我 Contact</a>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-container">
+            <div class="hero-text reveal">
+                <h1>Building Products with<br><span style="color: var(--accent-blue);">Strategy & AI.</span></h1>
+                
+                <div class="typewriter-container">
+                    <span id="typewriter-text"></span><span class="cursor"></span>
+                </div>
+                
+                <div class="tags">
+                    <span class="tag">#ProductStrategy</span>
+                    <span class="tag">#Agile/Scrum</span>
+                    <span class="tag">#AIWorkflow</span>
+                </div>
+
+                <p style="color: var(--text-sub); margin-bottom: 2rem;">
+                    5 年產品規劃經驗 ｜ B2B2C 平台專家 ｜ AI 應用實踐者。<br>
+                    擅長從市場洞察、需求釐清至產品迭代的全生命週期管理。
+                </p>
+
+                <a href="#tools" class="btn-primary">查看 AI 實踐案例</a>
+            </div>
+
+            <div class="hero-img-box reveal">
+                <img src="profile.png" alt="Profile Photo">
+            </div>
+        </div>
+    </header>
+
+    <section id="about">
+        <div class="section-header reveal">
+            <h3>Professional Standards</h3>
+            <p>核心專業認證與持續進修軌跡</p>
+        </div>
+
+        <div class="cert-container">
+            <div class="anchor-card reveal">
+                <div class="anchor-header">
+                    <img src="badge-pmp.png" alt="PMP Badge"> 
+                    <div><h3>PMP®<br>國際專案管理師</h3></div>
+                </div>
+                <div class="anchor-img-full">
+                    <img src="cert-pmp-full.png" alt="PMP Full Certificate">
+                </div>
+                <div class="anchor-body">
+                    <ul class="skill-list">
+                        <li><i class="fas fa-check-circle"></i> 熟稔 PMI 五大流程與十大知識領域</li>
+                        <li><i class="fas fa-check-circle"></i> 靈活運用 Waterfall 與 Agile 混合模式</li>
+                        <li><i class="fas fa-check-circle"></i> 確保專案在範疇、時間與成本內高效交付</li>
+                    </ul>
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed #cbd5e1;">
+                        <h5 style="font-size: 0.9rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                            <span><i class="fas fa-bullseye" style="margin-right: 5px;"></i> 2026 年度目標</span>
+                            <span style="font-size: 0.75rem; background: #eff6ff; color: var(--accent-blue); padding: 2px 8px; border-radius: 10px; font-weight:700;">Preparing</span>
+                        </h5>
+                        <p style="font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; font-size: 0.95rem;">IPAS AI 應用規劃師</p>
+                        <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                            <div style="width: 40%; height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-orange)); border-radius: 3px;"></div>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 8px; line-height: 1.4;">
+                            專注於 AI 落地應用架構與產業導入策略，預計於 2026 取得認證。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cert-grid">
+                <div class="cert-item reveal">
+                    <span class="badge-tag">AI Agents Trend</span>
+                    <div class="cert-img-box"><img src="cert-agents.png" alt="AI Agents"></div>
+                    <h4>5-Day AI Agents Intensive</h4>
+                    <p style="font-size: 0.9rem; color: #64748b;">掌握 AI 代理人協作邏輯，具備規劃多代理系統的前瞻視野。</p>
+                </div>
+                <div class="cert-item reveal">
+                    <span class="badge-tag">Google Certified</span>
+                    <div class="cert-img-box"><img src="cert-gemini.png" alt="Gemini Educator"></div>
+                    <h4>Gemini Certified Educator</h4>
+                    <p style="font-size: 0.9rem; color: #64748b;">熟練運用 Gemini 模型於知識管理與教學引導，提升組織內部的 AI 素養。</p>
+                </div>
+                <div class="cert-item reveal">
+                    <span class="badge-tag">Core Skill</span>
+                    <div class="cert-img-box"><img src="cert-prompt-spec.png" alt="Prompt Spec"></div>
+                    <h4>Prompt Engineering Specialization</h4>
+                    <p style="font-size: 0.9rem; color: #64748b;">整合 ChatGPT 提示工程與數據分析，兼顧安全倫理，具備完整 LLM 應用實戰力。</p>
+                </div>
+                <div class="cert-item reveal">
+                    <span class="badge-tag">Technical Base</span>
+                    <div class="cert-img-box"><img src="cert-genai-foundations.png" alt="GenAI Foundations"></div>
+                    <h4>GenAI Developer Foundations</h4>
+                    <p style="font-size: 0.9rem; color: #64748b;">具備 GenAI 開發基礎，理解 LLM 原理與 Transformer 架構，能與工程團隊順暢溝通。</p>
+                </div>
+                <div class="cert-item reveal">
+                    <span class="badge-tag">User Centric</span>
+                    <div class="cert-img-box"><img src="cert-ux.png" alt="UX Design"></div>
+                    <h4>UX 三刀流使用者體驗設計</h4>
+                    <p style="font-size: 0.9rem; color: #64748b;">平衡技術與體驗。具備使用者研究與資訊架構 (IA) 規劃能力，確保 AI 解決真實痛點。</p>
+                </div>
+                <div class="cert-item reveal">
+                    <span class="badge-tag">Enterprise AI</span>
+                    <div class="cert-img-box"><img src="cert-vertex-prompt.png" alt="Vertex AI"></div>
+                    <h4>Prompt Design in Vertex AI</h4>
+                    <p style="font-size: 0.9rem; color: #64748b;">掌握企業級 Prompt Engineering。運用 Google Vertex AI 調教模型參數，優化生成精準度。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tools">
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div class="section-header reveal">
+                <h3>The AI Lab & Tools</h3>
+                <p>將創意轉化為實際產品的開發實錄</p>
+            </div>
+
+            <div class="tools-grid">
+                
+                <div class="tool-card reveal">
+                    <div class="tool-media">
+                        <img src="tool-fitting.png" alt="AI Virtual Stylist">
+                    </div>
+                    <div class="tool-content">
+                        <h4>GenAI 智能試衣間</h4>
+                        <p style="color: #64748b;">
+                            運用生成式 AI 影像重繪技術，使用者上傳單張照片即可一鍵替換服裝與妝容。解決「衣櫃永遠少一件衣服」的困擾，實現高擬真的虛擬試穿體驗。
+                        </p>
+                        <a onclick="openModal('video', 'demo-fitting.mp4')" class="tool-link">查看試穿影片 <i class="fas fa-play-circle"></i></a>
+                    </div>
+                </div>
+
+                <div class="tool-card reveal">
+                    <div class="tool-media">
+                        <img src="tool-buzzview.png" alt="BuzzView AI">
+                    </div>
+                    <div class="tool-content">
+                        <h4>BuzzView AI 熱點觀測站</h4>
+                        <p style="color: #64748b;">
+                            串接多方新聞 API 與爬蟲技術，即時運算全網熱門話題。透過 NLP 自然語言處理提煉關鍵字雲與排行榜，協助團隊快速捕捉市場風向與競品動態。
+                        </p>
+                        <a onclick="openModal('video', 'demo-buzzview.mp4')" class="tool-link">查看 Demo 影片 <i class="fas fa-play-circle"></i></a>
+                    </div>
+                </div>
+
+                <div class="tool-card reveal">
+                    <div class="tool-media">
+                        <img src="tool-story.png" alt="AI Story Studio">
+                    </div>
+                    <div class="tool-content">
+                        <h4>AI 故事編譯社</h4>
+                        <p style="color: #64748b;">
+                            整合 LLM 文本生成與 Diffusion 圖像模型。用戶僅需輸入單一主題，系統即自動產出完整故事腳本、風格化分鏡圖，並延伸製作成動態影片。打造從創意到影音的一站式 AIGC 生產流。
+                        </p>
+                        <a onclick="openModal('video', 'demo-story.mp4')" class="tool-link">觀看生成影片 <i class="fas fa-play-circle"></i></a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <footer style="text-align: center; padding: 4rem 0; border-top: 1px solid #e2e8f0; position: relative; z-index: 10;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">Let's Connect</h2>
+        <p style="color: var(--text-sub); margin-bottom: 2rem;">準備好開始下一段旅程了嗎？發送訊號，讓我們一起探索機會。</p>
+        <a href="mailto:your.email@example.com" class="btn-primary" style="padding: 0.8rem 2rem;">Email Me</a>
+        <p style="margin-top: 3rem; font-size: 0.8rem; color: #94a3b8;">© 2026 AI-Driven PM Portfolio.</p>
+    </footer>
+
+    <script>
+        // --- 1. 滾動顯示特效 ---
+        function reveal() {
+            var reveals = document.querySelectorAll(".reveal");
+            for (var i = 0; i < reveals.length; i++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[i].getBoundingClientRect().top;
+                var elementVisible = 100;
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                }
+            }
+        }
+        window.addEventListener("scroll", reveal);
+        reveal(); // Init
+
+        // --- 2. 游標光暈 ---
+        const glow = document.getElementById("glow");
+        document.addEventListener("mousemove", (e) => {
+            requestAnimationFrame(() => {
+                glow.style.left = `${e.clientX}px`;
+                glow.style.top = `${e.clientY}px`;
+            });
+        });
+
+        // --- 3. 標語打字機特效 ---
+        const textElement = document.getElementById("typewriter-text");
+        const phrases = ["擁抱 AI 浪潮", "沉浸 AI 實踐", "落實 AI 產出"];
+        let phraseIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        let typeSpeed = 100;
+
+        function type() {
+            const currentPhrase = phrases[phraseIndex];
+            if (isDeleting) {
+                textElement.textContent = currentPhrase.substring(0, charIndex - 1);
+                charIndex--;
+                typeSpeed = 50; 
+            } else {
+                textElement.textContent = currentPhrase.substring(0, charIndex + 1);
+                charIndex++;
+                typeSpeed = 100; 
+            }
+            if (!isDeleting && charIndex === currentPhrase.length) {
+                isDeleting = true; typeSpeed = 2000; 
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false; phraseIndex = (phraseIndex + 1) % phrases.length; typeSpeed = 500;
+            }
+            setTimeout(type, typeSpeed);
+        }
+        document.addEventListener('DOMContentLoaded', type);
+
+        // --- 4. 彈窗 Modal 控制邏輯 (影片專用增強版) ---
+        const modal = document.getElementById('mediaModal');
+        const modalContent = document.getElementById('modalContent');
+
+        function openModal(type, src) {
+            modalContent.innerHTML = ''; // 清空舊內容
+            
+            if (type === 'image') {
+                const img = document.createElement('img');
+                img.src = src;
+                modalContent.appendChild(img);
+            } else if (type === 'video') {
+                const video = document.createElement('video');
+                video.src = src;
+                video.controls = true;      // 顯示播放控制器
+                video.autoplay = true;      // 自動播放
+                video.playsInline = true;   // 支援手機內嵌播放
+                
+                // 錯誤偵測：如果影片讀不到，會跳出提示
+                video.onerror = function() {
+                    alert("影片無法播放！\n請檢查：\n1. 檔名是否為 " + src + "\n2. 檔案是否放在正確資料夾\n3. 是否真的是 mp4 檔 (不能只是改副檔名)");
+                };
+
+                modalContent.appendChild(video);
+            }
+            
+            modal.style.display = 'flex';
+            setTimeout(() => { modal.classList.add('active'); }, 10);
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                modalContent.innerHTML = ''; // 關閉後清空
+            }, 300);
+        }
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
